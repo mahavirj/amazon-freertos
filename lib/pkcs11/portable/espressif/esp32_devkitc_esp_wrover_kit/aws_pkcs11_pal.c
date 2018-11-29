@@ -59,13 +59,15 @@ static void initialize_nvs_partition()
 {
     static bool nvs_inited;
 
+    portENTER_CRITICAL();
     if (nvs_inited == true) {
+        portEXIT_CRITICAL();
         return;
     }
 
     ESP_LOGI(TAG, "Initializing NVS partition: \"%s\"", NVS_PART_NAME);
 
-    portENTER_CRITICAL();
+
 
 #if CONFIG_NVS_ENCRYPTION
     if (esp_flash_encryption_enabled()) {
