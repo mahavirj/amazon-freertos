@@ -1,3 +1,9 @@
+# The contents of this file are DEPRECATED so don't execute the following
+return()
+
+# The following lines are only for reference to earlier implementation
+# of CMake build and will be removed in future
+
 set(AMAZON_FREERTOS_LIB_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../../../lib")
 set(AMAZON_FREERTOS_DEMOS_DIR "${CMAKE_CURRENT_LIST_DIR}/../../../../../../../demos")
 
