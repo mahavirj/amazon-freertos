@@ -21,8 +21,8 @@ afr_module_sources(
 afr_module_include_dirs(
     posix
     PUBLIC
-        "${AFR_MODULES_DIR}/FreeRTOS-Plus-POSIX/include"
         $<TARGET_PROPERTY:AFR::kernel,INTERFACE_INCLUDE_DIRECTORIES>
+        "${AFR_MODULES_DIR}/FreeRTOS-Plus-POSIX/include"
         $<${AFR_IS_TESTING}:$<TARGET_PROPERTY:AFR::posix::mcu_port,INTERFACE_INCLUDE_DIRECTORIES>>
 )
 

@@ -10,6 +10,7 @@ afr_module_sources(
 afr_module_include_dirs(
     secure_sockets
     PUBLIC
+        $<TARGET_PROPERTY:AFR::kernel::mcu_port,INTERFACE_INCLUDE_DIRECTORIES>
         "${AFR_MODULES_DIR}/include"
         "${AFR_MODULES_DIR}/include/private"
 )

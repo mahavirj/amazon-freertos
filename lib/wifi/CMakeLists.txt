@@ -7,7 +7,9 @@ afr_module_sources(
 
 afr_module_include_dirs(
     wifi
-    PUBLIC "${AFR_MODULES_DIR}/include"
+    PUBLIC
+        $<TARGET_PROPERTY:AFR::kernel,INTERFACE_INCLUDE_DIRECTORIES>
+        "${AFR_MODULES_DIR}/include"
 )
 
 afr_module_dependencies(

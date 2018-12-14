@@ -47,8 +47,8 @@ afr_module_dependencies(
 afr_module_include_dirs(
     kernel
     PUBLIC
-        $<TARGET_PROPERTY:AFR::freertos,INTERFACE_INCLUDE_DIRECTORIES>
         $<TARGET_PROPERTY:AFR::kernel::mcu_port,INTERFACE_INCLUDE_DIRECTORIES>
+        $<TARGET_PROPERTY:AFR::freertos,INTERFACE_INCLUDE_DIRECTORIES>
         $<${AFR_IS_TESTING}:${AFR_3RDPARTY_DIR}/unity/src>
 )
 
