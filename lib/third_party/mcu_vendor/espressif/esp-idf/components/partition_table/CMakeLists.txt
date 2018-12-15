@@ -29,6 +29,7 @@ else()
 endif()
 
 add_custom_command(OUTPUT "${IDF_BUILD_ARTIFACTS_DIR}/partition_table/${unsigned_partition_bin}"
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${IDF_BUILD_ARTIFACTS_DIR}/partition_table"
     COMMAND "${PYTHON}" "${CMAKE_CURRENT_SOURCE_DIR}/gen_esp32part.py" 
     -q --offset ${PARTITION_TABLE_OFFSET} ${md5_opt} ${flashsize_opt}
     ${partition_secure_opt} ${partition_csv} ${IDF_BUILD_ARTIFACTS_DIR}/partition_table/${unsigned_partition_bin}

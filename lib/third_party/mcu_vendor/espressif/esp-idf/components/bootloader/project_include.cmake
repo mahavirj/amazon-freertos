@@ -54,6 +54,7 @@ if((NOT CONFIG_SECURE_BOOT_ENABLED) OR
         CMAKE_ARGS  -DSDKCONFIG=${SDKCONFIG} -DIDF_PATH=${IDF_PATH} -DEXTRA_COMPONENT_DIRS=${COMPONENT_DIRS}
                     -DTESTS_ALL=0 -DTEST_COMPONENTS=""
                     -DSECURE_BOOT_SIGNING_KEY=${secure_boot_signing_key}
+                    -DIDF_TOOLCHAIN_FILE=${IDF_TOOLCHAIN_FILE}
         INSTALL_COMMAND ""
         BUILD_ALWAYS 1  # no easy way around this...
         BUILD_BYPRODUCTS ${bootloader_binary_files}

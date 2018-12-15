@@ -48,7 +48,7 @@ endif()
 if(NOT MCONF)
     # Use the existing Makefile to build mconf (out of tree) when needed
     #
-    set(MCONF ${CMAKE_BINARY_DIR}/kconfig_bin/mconf-idf)
+    set(MCONF ${CMAKE_CURRENT_BINARY_DIR}/kconfig_bin/mconf-idf)
 
     externalproject_add(mconf-idf
         SOURCE_DIR ${IDF_PATH}/tools/kconfig
