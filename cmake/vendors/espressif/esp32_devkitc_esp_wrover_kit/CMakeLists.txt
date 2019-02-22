@@ -82,6 +82,13 @@ target_include_directories(
         "${CMAKE_BINARY_DIR}/config"
 )
 
+# POSIX
+afr_mcu_port(posix)
+target_include_directories(
+    AFR::posix::mcu_port
+    INTERFACE "${AFR_MODULES_DIR}/FreeRTOS-Plus-POSIX/include/${portable_dir}"
+)
+
 # WiFi
 afr_mcu_port(wifi)
 target_link_libraries(
@@ -204,6 +211,19 @@ function(target_link_libraries)
         list(INSERT ${_args} 1 PRIVATE)
     endif()
     _target_link_libraries(${${_args}})
+endfunction()
+
+function(afr_module_sources)
+    set(_args ARGV)
+    if(${ARGV0} STREQUAL posix)
+        # Remove the source files for FreeRTOS native posix implementation which will
+        # conflict with the IDF's native posix implementation
+        list(REMOVE_ITEM ${_args} "${AFR_MODULES_DIR}/FreeRTOS-Plus-POSIX/source/FreeRTOS_POSIX_pthread_mutex.c")
+        list(REMOVE_ITEM ${_args} "${AFR_MODULES_DIR}/FreeRTOS-Plus-POSIX/source/FreeRTOS_POSIX_pthread_cond.c")
+        list(REMOVE_ITEM ${_args} "${AFR_MODULES_DIR}/FreeRTOS-Plus-POSIX/source/FreeRTOS_POSIX_pthread.c")
+        list(REMOVE_ITEM ${_args} "${AFR_MODULES_DIR}/FreeRTOS-Plus-POSIX/source/FreeRTOS_POSIX_sched.c")
+    endif()
+    _afr_module_sources(${${_args}})
 endfunction()
 
 # Override IDF's native toolchain file
