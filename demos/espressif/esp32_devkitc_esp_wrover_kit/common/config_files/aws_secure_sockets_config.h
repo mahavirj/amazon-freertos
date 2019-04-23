@@ -23,6 +23,7 @@
  * http://www.FreeRTOS.org
  */
 
+
 /**
  * @file aws_secure_sockets_config.h
  * @brief Secure sockets configuration options.
@@ -47,5 +48,10 @@
  * @brief Default socket receive timeout.
  */
 #define socketsconfigDEFAULT_RECV_TIMEOUT    ( 10000 )
+
+/**
+ * @brief Default max socket number support
+ */
+#define socketsconfigDEFAULT_MAX_NUM_SECURE_SOCKETS     6
 
 #endif /* _AWS_SECURE_SOCKETS_CONFIG_H_ */

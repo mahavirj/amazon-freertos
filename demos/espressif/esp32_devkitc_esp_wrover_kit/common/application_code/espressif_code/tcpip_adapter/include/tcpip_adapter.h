@@ -39,14 +39,24 @@
 #include <stdint.h>
 #include "rom/queue.h"
 #include "esp_wifi_types.h"
+#if CONFIG_TCPIP_FREERTOS_STACK
 #include "FreeRTOS.h"
 #include "list.h"
 #include "FreeRTOS_IP.h"
-
-#define CONFIG_TCPIP_LWIP 1
-#define CONFIG_DHCP_STA_LIST 1
+#endif
 
 #if CONFIG_TCPIP_LWIP
+#include "lwip/ip_addr.h"
+#include "apps/dhcpserver.h"
+#endif
+
+#define CONFIG_DHCP_STA_LIST 1
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if CONFIG_TCPIP_FREERTOS_STACK
 
 typedef struct ip4_addr {
     uint32_t addr;
@@ -92,8 +102,6 @@ typedef struct {
 #define IP6_ADDR_BLOCK7(ip6addr) ((u16_t)(FreeRTOS_htonl((ip6addr)->addr[3]) >> 16) & 0xffff)
 #define IP6_ADDR_BLOCK8(ip6addr) ((u16_t)(FreeRTOS_htonl((ip6addr)->addr[3])) & 0xffff)
 
-#ifdef __cplusplus
-extern "C" {
 #endif
 
 #define IP2STR(ipaddr) ip4_addr1_16(ipaddr), \
@@ -138,17 +146,15 @@ typedef struct {
 } tcpip_adapter_sta_list_t;
 #endif
 
-#endif
-
 #define ESP_ERR_TCPIP_ADAPTER_BASE      0x5000      // TODO: move base address to esp_err.h
 
-#define ESP_ERR_TCPIP_ADAPTER_INVALID_PARAMS        ESP_ERR_TCPIP_ADAPTER_BASE + 0x00
-#define ESP_ERR_TCPIP_ADAPTER_IF_NOT_READY          ESP_ERR_TCPIP_ADAPTER_BASE + 0x01
-#define ESP_ERR_TCPIP_ADAPTER_DHCPC_START_FAILED    ESP_ERR_TCPIP_ADAPTER_BASE + 0x02
-#define ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED  ESP_ERR_TCPIP_ADAPTER_BASE + 0x03
-#define ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED  ESP_ERR_TCPIP_ADAPTER_BASE + 0x04
-#define ESP_ERR_TCPIP_ADAPTER_NO_MEM                ESP_ERR_TCPIP_ADAPTER_BASE + 0x05
-#define ESP_ERR_TCPIP_ADAPTER_DHCP_NOT_STOPPED      ESP_ERR_TCPIP_ADAPTER_BASE + 0x06
+#define ESP_ERR_TCPIP_ADAPTER_INVALID_PARAMS        ESP_ERR_TCPIP_ADAPTER_BASE + 0x01
+#define ESP_ERR_TCPIP_ADAPTER_IF_NOT_READY          ESP_ERR_TCPIP_ADAPTER_BASE + 0x02
+#define ESP_ERR_TCPIP_ADAPTER_DHCPC_START_FAILED    ESP_ERR_TCPIP_ADAPTER_BASE + 0x03
+#define ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STARTED  ESP_ERR_TCPIP_ADAPTER_BASE + 0x04
+#define ESP_ERR_TCPIP_ADAPTER_DHCP_ALREADY_STOPPED  ESP_ERR_TCPIP_ADAPTER_BASE + 0x05
+#define ESP_ERR_TCPIP_ADAPTER_NO_MEM                ESP_ERR_TCPIP_ADAPTER_BASE + 0x06
+#define ESP_ERR_TCPIP_ADAPTER_DHCP_NOT_STOPPED      ESP_ERR_TCPIP_ADAPTER_BASE + 0x07
 
 /* TODO: add Ethernet interface */
 typedef enum {

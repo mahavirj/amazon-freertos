@@ -31,10 +31,16 @@
 #include "esp_log.h"
 #include "esp_event_loop.h"
 #include "event_groups.h"
-#include "FreeRTOS_IP.h"
-#include "FreeRTOS_Sockets.h"
 #include "semphr.h"
 #include "esp_smartconfig.h"
+#if CONFIG_TCPIP_LWIP
+#include "lwip/dns.h"
+#include "lwip/netdb.h"
+#endif
+#if CONFIG_TCPIP_FREERTOS_STACK
+#include "FreeRTOS_IP.h"
+#include "FreeRTOS_Sockets.h"
+#endif
 
 static const char *TAG = "WIFI";
 static EventGroupHandle_t wifi_event_group;
@@ -557,12 +563,12 @@ WIFIReturnCode_t WIFI_Ping( uint8_t * pucIPAddr,
 
 WIFIReturnCode_t WIFI_GetIP( uint8_t * pucIPAddr )
 {
-    WIFIReturnCode_t xRetVal;
+    WIFIReturnCode_t xRetVal = eWiFiFailure;
 
     if (pucIPAddr == NULL) {
-        return eWiFiFailure;
+        return xRetVal;
     }
-
+#if CONFIG_TCPIP_FREERTOS_STACK
     /* Try to acquire the semaphore. */
     if( xSemaphoreTake( xWiFiSem, xSemaphoreWaitTicks ) == pdTRUE )
     {
@@ -575,6 +581,7 @@ WIFIReturnCode_t WIFI_GetIP( uint8_t * pucIPAddr )
     {
         xRetVal = eWiFiTimeout;
     }
+#endif
 
     return xRetVal;
 }
@@ -630,16 +637,27 @@ WIFIReturnCode_t WIFI_GetHostIP( char * pcHost,
     if (pcHost == NULL || pucIPAddr == NULL) {
         return xRetVal;
     }
-
     /* Try to acquire the semaphore. */
     if( xSemaphoreTake( xWiFiSem, xSemaphoreWaitTicks ) == pdTRUE )
     {
+#if CONFIG_TCPIP_FREERTOS_STACK
         IPAddr = FreeRTOS_gethostbyname( pcHost );
         if (IPAddr != 0UL)
         {
             *( ( uint32_t * ) pucIPAddr ) = IPAddr;
             xRetVal = eWiFiSuccess;
         }
+#endif
+#if CONFIG_TCPIP_LWIP
+        struct hostent *he;
+        struct in_addr **addr_list;
+        he = gethostbyname(pcHost);
+        if (he != NULL) {
+            addr_list = (struct in_addr **)he->h_addr_list;
+            memcpy(pucIPAddr, addr_list[0], sizeof(uint32_t));
+            xRetVal = eWiFiSuccess;
+        }
+#endif
         /* Return the semaphore. */
         xSemaphoreGive( xWiFiSem );
     }
