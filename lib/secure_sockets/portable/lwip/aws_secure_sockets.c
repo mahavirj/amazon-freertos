@@ -30,11 +30,12 @@
  */
 
 /* Socket and WiFi interface includes. */
+#include "string.h"
 #include "aws_secure_sockets.h"
 
 
-#include "sockets.h"
-#include "netdb.h"
+#include "lwip/sockets.h"
+#include "lwip/netdb.h"
 
 #include "aws_wifi.h"
 

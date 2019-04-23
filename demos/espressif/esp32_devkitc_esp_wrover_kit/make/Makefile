@@ -16,4 +16,3 @@ endif
 EXTRA_COMPONENT_DIRS := $(AMAZON_FREERTOS_PATH)/demos/espressif/esp32_devkitc_esp_wrover_kit/common/application_code/espressif_code
 
 include $(IDF_PATH)/make/project.mk
-
