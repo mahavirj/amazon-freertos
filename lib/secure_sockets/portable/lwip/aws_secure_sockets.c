@@ -239,7 +239,7 @@ static void prvRxSelectSet( ss_ctx_t * ctx, const void * pvOptionValue )
 
     xReturned = xTaskCreate( vTaskRxSelect,   /* pvTaskCode */
                                "rxs",         /* pcName */
-                               512,           /* usStackDepth */
+                               2048,           /* usStackDepth */
                                ctx,           /* pvParameters */
                                1,             /* uxPriority */
                                &xHandle );    /* pxCreatedTask */
