@@ -64,6 +64,7 @@ FAILED_EXAMPLES=""
 RESULT_ISSUES=22  # magic number result code for issues found
 LOG_SUSPECTED=${LOG_PATH}/common_log.txt
 touch ${LOG_SUSPECTED}
+SDKCONFIG_DEFAULTS_CI=sdkconfig.ci
 
 EXAMPLE_PATHS=$( find ${IDF_PATH}/examples/ -type f -name CMakeLists.txt | grep -v "/components/" | grep -v "/main/" | sort )
 
@@ -80,7 +81,8 @@ else
     [ -z ${JOB_PATTERN} ] && die "JOB_PATTERN is bad"
 
     # parse number 'NUM' at the end of string 'some_your_text_NUM'
-    JOB_NUM=$( echo ${JOB_NAME} | sed -n -r 's/^.*_([0-9]+)$/\1/p' )
+    # NOTE: Getting rid of the leading zero to get the decimal
+    JOB_NUM=$( echo ${JOB_NAME} | sed -n -r 's/^.*_0*([0-9]+)$/\1/p' )
     [ -z ${JOB_NUM} ] && die "JOB_NUM is bad"
 
     # count number of the jobs
@@ -89,7 +91,7 @@ else
 
     # count number of examples
     NUM_OF_EXAMPLES=$( echo "${EXAMPLE_PATHS}" | wc -l )
-    [ ${NUM_OF_EXAMPLES} -lt 80 ] && die "NUM_OF_EXAMPLES is bad"
+    [ ${NUM_OF_EXAMPLES} -lt 100 ] && die "NUM_OF_EXAMPLES is bad"
 
     # separate intervals
     #57 / 5 == 12
@@ -120,6 +122,16 @@ build_example () {
         # be stricter in the CI build than the default IDF settings
         export EXTRA_CFLAGS="-Werror -Werror=deprecated-declarations"
         export EXTRA_CXXFLAGS=${EXTRA_CFLAGS}
+
+        # sdkconfig files are normally not checked into git, but may be present when
+        # a developer runs this script locally
+        rm -f sdkconfig
+
+        # If sdkconfig.ci file is present, append it to sdkconfig.defaults,
+        # replacing environment variables
+        if [[ -f "$SDKCONFIG_DEFAULTS_CI" ]]; then
+            cat $SDKCONFIG_DEFAULTS_CI | $IDF_PATH/tools/ci/envsubst.py >> sdkconfig.defaults
+        fi
 
         # build non-verbose first
         local BUILDLOG=${LOG_PATH}/ex_${ID}_log.txt
@@ -160,8 +172,17 @@ echo -e "\nFound issues:"
 #       Ignore the next messages:
 # "error.o" or "-Werror" in compiler's command line
 # "reassigning to symbol" or "changes choice state" in sdkconfig
-sort -u "${LOG_SUSPECTED}" | \
-grep -v "library/error.o\|\ -Werror\|reassigning to symbol\|changes choice state" \
+# 'Compiler and toochain versions is not supported' from crosstool_version_check.cmake
+IGNORE_WARNS="\
+library/error\.o\
+\|\ -Werror\
+\|error\.d\
+\|reassigning to symbol\
+\|changes choice state\
+\|crosstool_version_check\.cmake\
+"
+
+sort -u "${LOG_SUSPECTED}" | grep -v "${IGNORE_WARNS}" \
     && RESULT=$RESULT_ISSUES \
     || echo -e "\tNone"
 

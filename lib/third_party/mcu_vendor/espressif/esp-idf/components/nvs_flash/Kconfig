@@ -1,12 +1,5 @@
 menu NVS
 
-config MP_BLOB_SUPPORT
-    bool "Enable multi-page blob support"
-    default n
-    help
-        When enabled, blobs larger than the sector size are split and stored on multiple sectors.
-        This removes the earlier limitation of 1984 bytes for storing data-blobs.
-
 config NVS_ENCRYPTION
    bool "Enable NVS encryption"
    default n
@@ -16,5 +9,4 @@ config NVS_ENCRYPTION
       the complete NVS data, except the page headers. It requires XTS encryption keys 
       to be stored in an encrypted partition. This means enabling flash encryption is 
       a pre-requisite for this feature. 
-
 endmenu

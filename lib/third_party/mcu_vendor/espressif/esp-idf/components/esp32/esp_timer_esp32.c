@@ -97,7 +97,7 @@ static uint32_t s_alarm_overflow_val = DEFAULT_ALARM_OVERFLOW_VAL;
 
 static const char* TAG = "esp_timer_impl";
 
-// Interrupt handle retuned by the interrupt allocator
+// Interrupt handle returned by the interrupt allocator
 static intr_handle_t s_timer_interrupt_handle;
 
 // Function from the upper layer to be called when the interrupt happens.
@@ -123,7 +123,7 @@ static uint32_t s_timer_us_per_overflow;
 // value than the one which caused an interrupt. This can cause interrupt handler
 // to consider that the interrupt has happened due to timer overflow, incrementing
 // s_time_base_us. To avoid this, frequency switch hook sets this flag if
-// it needs to set timer alarm value to ALARM_OVERFLOW_VAL. Interrupt hanler
+// it needs to set timer alarm value to ALARM_OVERFLOW_VAL. Interrupt handler
 // will not increment s_time_base_us if this flag is set.
 static bool s_mask_overflow;
 
@@ -201,7 +201,7 @@ uint64_t IRAM_ATTR esp_timer_impl_get_time()
         ticks_per_us = s_timer_ticks_per_us;
 
         /* Read them again and compare */
-        /* In this function, do not call timer_count_reload() when overflow is ture.
+        /* In this function, do not call timer_count_reload() when overflow is true.
          * Because there's remain count enough to allow FRC_TIMER_COUNT_REG grow
          */
         if (REG_READ(FRC_TIMER_COUNT_REG(1)) > timer_val &&

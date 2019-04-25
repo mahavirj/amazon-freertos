@@ -535,6 +535,29 @@ void BTA_DmConfirm(BD_ADDR bd_addr, BOOLEAN accept)
 
 /*******************************************************************************
 **
+** Function         BTA_DmPasskeyReqReply
+**
+** Description      This function is called to provide the passkey for
+**                  Simple Pairing in response to BTA_DM_SP_KEY_REQ_EVT
+**
+** Returns          void
+**
+*******************************************************************************/
+#if (BT_SSP_INCLUDED == TRUE)
+void BTA_DmPasskeyReqReply(BOOLEAN accept, BD_ADDR bd_addr, UINT32 passkey)
+{
+    tBTA_DM_API_KEY_REQ    *p_msg;
+    if ((p_msg = (tBTA_DM_API_KEY_REQ *) osi_malloc(sizeof(tBTA_DM_API_KEY_REQ))) != NULL) {
+        p_msg->hdr.event = BTA_DM_API_KEY_REQ_EVT;
+        bdcpy(p_msg->bd_addr, bd_addr);
+        p_msg->accept = accept;
+        p_msg->passkey = passkey;
+        bta_sys_sendmsg(p_msg);
+    }
+}
+#endif ///BT_SSP_INCLUDED == TRUE
+/*******************************************************************************
+**
 ** Function         BTA_DmAddDevice
 **
 ** Description      This function adds a device to the security database list of
@@ -1230,6 +1253,34 @@ void BTA_DmBleSetScanRspRaw (UINT8 *p_raw_scan_rsp, UINT32 raw_scan_rsp_len,
         p_msg->p_adv_data_cback = p_scan_rsp_data_cback;
         p_msg->p_raw_adv = p_raw_scan_rsp;
         p_msg->raw_adv_len = raw_scan_rsp_len;
+
+        bta_sys_sendmsg(p_msg);
+    }
+}
+
+/*******************************************************************************
+**
+** Function         BTA_DmUpdateDuplicateExceptionalList
+**
+** Description      This function is called to update duplicate scan exceptional list
+**
+** Parameters       subcode : add, remove or clean duplicate scan exceptional list.
+**                  type : device info type.
+**                  device_info:  device info
+**                  p_update_duplicate_ignore_list_cback :  update complete callback.
+**
+** Returns          None
+**
+*******************************************************************************/
+void BTA_DmUpdateDuplicateExceptionalList(UINT8 subcode, UINT32 type, BD_ADDR device_info, tBTA_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_CMPL_CBACK p_update_duplicate_exceptional_list_cback)
+{
+    tBTA_DM_API_UPDATE_DUPLICATE_EXCEPTIONAL_LIST *p_msg;
+    if ((p_msg = (tBTA_DM_API_UPDATE_DUPLICATE_EXCEPTIONAL_LIST *)osi_malloc(sizeof(tBTA_DM_API_UPDATE_DUPLICATE_EXCEPTIONAL_LIST))) != NULL) {
+        p_msg->hdr.event = BTA_DM_API_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_EVT;
+        p_msg->subcode = subcode;
+        p_msg->type = type;
+        p_msg->exceptional_list_cb = p_update_duplicate_exceptional_list_cback;
+        memcpy(p_msg->device_info, device_info, sizeof(BD_ADDR));
 
         bta_sys_sendmsg(p_msg);
     }
@@ -2367,6 +2418,16 @@ extern void BTA_DmSetRandAddress(BD_ADDR rand_addr, tBTA_SET_RAND_ADDR_CBACK *p_
         p_msg->addr_type = BLE_ADDR_RANDOM;
         p_msg->p_set_rand_addr_cback = p_set_rand_addr_cback;
         //start sent the msg to the bta system control moudle
+        bta_sys_sendmsg(p_msg);
+    }
+}
+
+void BTA_DmClearRandAddress(void)
+{
+    tBTA_DM_APT_CLEAR_ADDR *p_msg;
+    if ((p_msg = (tBTA_DM_APT_CLEAR_ADDR *) osi_malloc(sizeof(tBTA_DM_APT_CLEAR_ADDR))) != NULL) {
+        memset(p_msg, 0, sizeof(tBTA_DM_APT_CLEAR_ADDR));
+        p_msg->hdr.event = BTA_DM_API_CLEAR_RAND_ADDR_EVT;
         bta_sys_sendmsg(p_msg);
     }
 }

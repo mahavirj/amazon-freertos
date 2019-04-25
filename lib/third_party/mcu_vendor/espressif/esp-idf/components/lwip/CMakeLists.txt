@@ -1,97 +1,123 @@
 set(COMPONENT_ADD_INCLUDEDIRS
-    include/lwip
-    include/lwip/port
-    include/lwip/posix
-    apps/ping
+    include/apps
+    lwip/src/include
+    port/esp32/include
+    port/esp32/include/arch
+    include_compat
     )
 
-set(COMPONENT_SRCS "api/api_lib.c"
-                   "api/api_msg.c"
-                   "api/err.c"
-                   "api/netbuf.c"
-                   "api/netdb.c"
-                   "api/netifapi.c"
-                   "api/pppapi.c"
-                   "api/sockets.c"
-                   "api/tcpip.c"
-                   "apps/dhcpserver.c"
+set(COMPONENT_SRCS "apps/dhcpserver/dhcpserver.c"
                    "apps/ping/esp_ping.c"
                    "apps/ping/ping.c"
-                   "apps/sntp/sntp.c"
-                   "core/def.c"
-                   "core/dns.c"
-                   "core/inet_chksum.c"
-                   "core/init.c"
-                   "core/ip.c"
-                   "core/mem.c"
-                   "core/memp.c"
-                   "core/netif.c"
-                   "core/pbuf.c"
-                   "core/raw.c"
-                   "core/stats.c"
-                   "core/sys.c"
-                   "core/tcp.c"
-                   "core/tcp_in.c"
-                   "core/tcp_out.c"
-                   "core/timers.c"
-                   "core/udp.c"
-                   "core/ipv4/autoip.c"
-                   "core/ipv4/dhcp.c"
-                   "core/ipv4/icmp.c"
-                   "core/ipv4/igmp.c"
-                   "core/ipv4/ip4.c"
-                   "core/ipv4/ip4_addr.c"
-                   "core/ipv4/ip_frag.c"
-                   "core/ipv6/dhcp6.c"
-                   "core/ipv6/ethip6.c"
-                   "core/ipv6/icmp6.c"
-                   "core/ipv6/inet6.c"
-                   "core/ipv6/ip6.c"
-                   "core/ipv6/ip6_addr.c"
-                   "core/ipv6/ip6_frag.c"
-                   "core/ipv6/mld6.c"
-                   "core/ipv6/nd6.c"
-                   "netif/etharp.c"
-                   "netif/ethernet.c"
-                   "netif/ethernetif.c"
-                   "netif/lowpan6.c"
-                   "netif/slipif.c"
-                   "port/vfs_lwip.c"
-                   "port/debug/lwip_debug.c"
-                   "port/freertos/sys_arch.c"
-                   "port/netif/ethernetif.c"
-                   "port/netif/wlanif.c")
+                   "lwip/src/api/api_lib.c"
+                   "lwip/src/api/api_msg.c"
+                   "lwip/src/api/err.c"
+                   "lwip/src/api/netbuf.c"
+                   "lwip/src/api/netdb.c"
+                   "lwip/src/api/netifapi.c"
+                   "lwip/src/api/sockets.c"
+                   "lwip/src/api/tcpip.c"
+                   "lwip/src/apps/sntp/sntp.c"
+                   "lwip/src/core/def.c"
+                   "lwip/src/core/dns.c"
+                   "lwip/src/core/inet_chksum.c"
+                   "lwip/src/core/init.c"
+                   "lwip/src/core/ip.c"
+                   "lwip/src/core/mem.c"
+                   "lwip/src/core/memp.c"
+                   "lwip/src/core/netif.c"
+                   "lwip/src/core/pbuf.c"
+                   "lwip/src/core/raw.c"
+                   "lwip/src/core/stats.c"
+                   "lwip/src/core/sys.c"
+                   "lwip/src/core/tcp.c"
+                   "lwip/src/core/tcp_in.c"
+                   "lwip/src/core/tcp_out.c"
+                   "lwip/src/core/timeouts.c"
+                   "lwip/src/core/udp.c"
+                   "lwip/src/core/ipv4/autoip.c"
+                   "lwip/src/core/ipv4/dhcp.c"
+                   "lwip/src/core/ipv4/etharp.c"
+                   "lwip/src/core/ipv4/icmp.c"
+                   "lwip/src/core/ipv4/igmp.c"
+                   "lwip/src/core/ipv4/ip4.c"
+                   "lwip/src/core/ipv4/ip4_addr.c"
+                   "lwip/src/core/ipv4/ip4_frag.c"
+                   "lwip/src/core/ipv6/dhcp6.c"
+                   "lwip/src/core/ipv6/ethip6.c"
+                   "lwip/src/core/ipv6/icmp6.c"
+                   "lwip/src/core/ipv6/inet6.c"
+                   "lwip/src/core/ipv6/ip6.c"
+                   "lwip/src/core/ipv6/ip6_addr.c"
+                   "lwip/src/core/ipv6/ip6_frag.c"
+                   "lwip/src/core/ipv6/mld6.c"
+                   "lwip/src/core/ipv6/nd6.c"
+                   "lwip/src/netif/ethernet.c"
+                   "lwip/src/netif/ethernetif.c"
+                   "lwip/src/netif/lowpan6.c"
+                   "lwip/src/netif/slipif.c"
+                   "lwip/src/netif/ppp/auth.c"
+                   "lwip/src/netif/ppp/ccp.c"
+                   "lwip/src/netif/ppp/chap-md5.c"
+                   "lwip/src/netif/ppp/chap-new.c"
+                   "lwip/src/netif/ppp/chap_ms.c"
+                   "lwip/src/netif/ppp/demand.c"
+                   "lwip/src/netif/ppp/eap.c"
+                   "lwip/src/netif/ppp/ecp.c"
+                   "lwip/src/netif/ppp/eui64.c"
+                   "lwip/src/netif/ppp/fsm.c"
+                   "lwip/src/netif/ppp/ipcp.c"
+                   "lwip/src/netif/ppp/ipv6cp.c"
+                   "lwip/src/netif/ppp/lcp.c"
+                   "lwip/src/netif/ppp/magic.c"
+                   "lwip/src/netif/ppp/mppe.c"
+                   "lwip/src/netif/ppp/multilink.c"
+                   "lwip/src/netif/ppp/ppp.c"
+                   "lwip/src/netif/ppp/pppapi.c"
+                   "lwip/src/netif/ppp/pppcrypt.c"
+                   "lwip/src/netif/ppp/pppoe.c"
+                   "lwip/src/netif/ppp/pppol2tp.c"
+                   "lwip/src/netif/ppp/pppos.c"
+                   "lwip/src/netif/ppp/upap.c"
+                   "lwip/src/netif/ppp/utils.c"
+                   "lwip/src/netif/ppp/vj.c"
+                   "port/esp32/vfs_lwip.c"
+                   "port/esp32/debug/lwip_debug.c"
+                   "port/esp32/freertos/sys_arch.c"
+                   "port/esp32/netif/ethernetif.c"
+                   "port/esp32/netif/wlanif.c")
 
 if(CONFIG_PPP_SUPPORT)
-    list(APPEND COMPONENT_SRCS "netif/ppp/auth.c"
-                   "netif/ppp/ccp.c"
-                   "netif/ppp/chap-md5.c"
-                   "netif/ppp/chap-new.c"
-                   "netif/ppp/chap_ms.c"
-                   "netif/ppp/demand.c"
-                   "netif/ppp/eap.c"
-                   "netif/ppp/ecp.c"
-                   "netif/ppp/eui64.c"
-                   "netif/ppp/fsm.c"
-                   "netif/ppp/ipcp.c"
-                   "netif/ppp/ipv6cp.c"
-                   "netif/ppp/lcp.c"
-                   "netif/ppp/magic.c"
-                   "netif/ppp/mppe.c"
-                   "netif/ppp/multilink.c"
-                   "netif/ppp/ppp.c"
-                   "netif/ppp/pppcrypt.c"
-                   "netif/ppp/pppoe.c"
-                   "netif/ppp/pppol2tp.c"
-                   "netif/ppp/pppos.c"
-                   "netif/ppp/upap.c"
-                   "netif/ppp/utils.c"
-                   "netif/ppp/vj.c"
-                   "netif/ppp/polarssl/arc4.c"
-                   "netif/ppp/polarssl/des.c"
-                   "netif/ppp/polarssl/md4.c"
-                   "netif/ppp/polarssl/md5.c"
-                   "netif/ppp/polarssl/sha1.c")
+    list(APPEND COMPONENT_SRCS "lwip/src/netif/ppp/auth.c"
+                   "lwip/src/netif/ppp/ccp.c"
+                   "lwip/src/netif/ppp/chap-md5.c"
+                   "lwip/src/netif/ppp/chap-new.c"
+                   "lwip/src/netif/ppp/chap_ms.c"
+                   "lwip/src/netif/ppp/demand.c"
+                   "lwip/src/netif/ppp/eap.c"
+                   "lwip/src/netif/ppp/ecp.c"
+                   "lwip/src/netif/ppp/eui64.c"
+                   "lwip/src/netif/ppp/fsm.c"
+                   "lwip/src/netif/ppp/ipcp.c"
+                   "lwip/src/netif/ppp/ipv6cp.c"
+                   "lwip/src/netif/ppp/lcp.c"
+                   "lwip/src/netif/ppp/magic.c"
+                   "lwip/src/netif/ppp/mppe.c"
+                   "lwip/src/netif/ppp/multilink.c"
+                   "lwip/src/netif/ppp/ppp.c"
+                   "lwip/src/netif/ppp/pppapi.c"
+                   "lwip/src/netif/ppp/pppcrypt.c"
+                   "lwip/src/netif/ppp/pppoe.c"
+                   "lwip/src/netif/ppp/pppol2tp.c"
+                   "lwip/src/netif/ppp/pppos.c"
+                   "lwip/src/netif/ppp/upap.c"
+                   "lwip/src/netif/ppp/utils.c"
+                   "lwip/src/netif/ppp/vj.c"
+                   "lwip/src/netif/ppp/polarssl/arc4.c"
+                   "lwip/src/netif/ppp/polarssl/des.c"
+                   "lwip/src/netif/ppp/polarssl/md4.c"
+                   "lwip/src/netif/ppp/polarssl/md5.c"
+                   "lwip/src/netif/ppp/polarssl/sha1.c")
 endif()
 
 set(COMPONENT_REQUIRES vfs)
@@ -99,21 +125,18 @@ set(COMPONENT_PRIV_REQUIRES ethernet tcpip_adapter)
 
 register_component()
 
+# lots of LWIP source files evaluate macros that check address of stack variables
 component_compile_options(-Wno-address)
 
-# patch around warnings in third-party files
-set_source_files_properties(api/tcpip.c
-    PROPERTIES COMPILE_FLAGS
-    -Wno-unused-variable
-    )
-set_source_files_properties(core/pbuf.c core/tcp_in.c
-    PROPERTIES COMPILE_FLAGS
-    -Wno-unused-but-set-variable
-    )
-set_source_files_properties(apps/dhcpserver.c
-    PROPERTIES COMPILE_FLAGS
-    "-Wno-unused-variable -Wno-unused-but-set-variable -Wno-type-limits"
-    )
-set_source_files_properties(netif/ppp/pppos.c
-    PROPERTIES COMPILE_FLAGS
-    -Wno-type-limits)
+if(GCC_NOT_5_2_0)
+    set_source_files_properties(
+        lwip/src/netif/ppp/ppp.c
+        PROPERTIES COMPILE_FLAGS
+        -Wno-uninitialized
+        )
+    set_source_files_properties(
+        lwip/src/netif/ppp/pppos.c
+        PROPERTIES COMPILE_FLAGS
+        -Wno-implicit-fallthrough
+        )
+endif()

@@ -13,6 +13,9 @@
 #if __has_include("esp_http_client.h")
 #include "esp_http_client.h"
 #endif
+#if __has_include("esp_http_server.h")
+#include "esp_http_server.h"
+#endif
 #if __has_include("esp_image_format.h")
 #include "esp_image_format.h"
 #endif
@@ -122,11 +125,11 @@ static const esp_err_msg_t esp_err_msg_table[] = {
     ERR_TBL_IT(ESP_ERR_NVS_INVALID_HANDLE),                 /*  4359 0x1107 Handle has been closed or is NULL */
 #   endif
 #   ifdef      ESP_ERR_NVS_REMOVE_FAILED
-    ERR_TBL_IT(ESP_ERR_NVS_REMOVE_FAILED),                  /*  4360 0x1108 The value wasn’t updated because flash
-                                                                            write operation has failed. The value was
-                                                                            written however, and update will be finished
-                                                                            after re-initialization of nvs, provided
-                                                                            that flash operation doesn’t fail again. */
+    ERR_TBL_IT(ESP_ERR_NVS_REMOVE_FAILED),                  /*  4360 0x1108 The value wasn’t updated because flash write
+                                                                            operation has failed. The value was written
+                                                                            however, and update will be finished after
+                                                                            re-initialization of nvs, provided that
+                                                                            flash operation doesn’t fail again. */
 #   endif
 #   ifdef      ESP_ERR_NVS_KEY_TOO_LONG
     ERR_TBL_IT(ESP_ERR_NVS_KEY_TOO_LONG),                   /*  4361 0x1109 Key name is too long */
@@ -417,7 +420,7 @@ static const esp_err_msg_t esp_err_msg_table[] = {
 #   ifdef      ESP_ERR_TCPIP_ADAPTER_DHCP_NOT_STOPPED
     ERR_TBL_IT(ESP_ERR_TCPIP_ADAPTER_DHCP_NOT_STOPPED),     /* 20487 0x5007 */
 #   endif
-    // components/lwip/apps/ping/esp_ping.h
+    // components/lwip/include/apps/esp_ping.h
 #   ifdef      ESP_ERR_PING_BASE
     ERR_TBL_IT(ESP_ERR_PING_BASE),                          /* 24576 0x6000 */
 #   endif
@@ -446,6 +449,43 @@ static const esp_err_msg_t esp_err_msg_table[] = {
 #   ifdef      ESP_ERR_HTTP_INVALID_TRANSPORT
     ERR_TBL_IT(ESP_ERR_HTTP_INVALID_TRANSPORT),             /* 28677 0x7005 There are no transport support for the input
                                                                             scheme */
+#   endif
+#   ifdef      ESP_ERR_HTTP_CONNECTING
+    ERR_TBL_IT(ESP_ERR_HTTP_CONNECTING),                    /* 28678 0x7006 HTTP connection hasn't been established yet */
+#   endif
+#   ifdef      ESP_ERR_HTTP_EAGAIN
+    ERR_TBL_IT(ESP_ERR_HTTP_EAGAIN),                        /* 28679 0x7007 Mapping of errno EAGAIN to esp_err_t */
+#   endif
+    // components/esp_http_server/include/esp_http_server.h
+#   ifdef      ESP_ERR_HTTPD_BASE
+    ERR_TBL_IT(ESP_ERR_HTTPD_BASE),                         /* 32768 0x8000 Starting number of HTTPD error codes */
+#   endif
+#   ifdef      ESP_ERR_HTTPD_HANDLERS_FULL
+    ERR_TBL_IT(ESP_ERR_HTTPD_HANDLERS_FULL),                /* 32769 0x8001 All slots for registering URI handlers have
+                                                                            been consumed */
+#   endif
+#   ifdef      ESP_ERR_HTTPD_HANDLER_EXISTS
+    ERR_TBL_IT(ESP_ERR_HTTPD_HANDLER_EXISTS),               /* 32770 0x8002 URI handler with same method and target URI
+                                                                            already registered */
+#   endif
+#   ifdef      ESP_ERR_HTTPD_INVALID_REQ
+    ERR_TBL_IT(ESP_ERR_HTTPD_INVALID_REQ),                  /* 32771 0x8003 Invalid request pointer */
+#   endif
+#   ifdef      ESP_ERR_HTTPD_RESULT_TRUNC
+    ERR_TBL_IT(ESP_ERR_HTTPD_RESULT_TRUNC),                 /* 32772 0x8004 Result string truncated */
+#   endif
+#   ifdef      ESP_ERR_HTTPD_RESP_HDR
+    ERR_TBL_IT(ESP_ERR_HTTPD_RESP_HDR),                     /* 32773 0x8005 Response header field larger than supported */
+#   endif
+#   ifdef      ESP_ERR_HTTPD_RESP_SEND
+    ERR_TBL_IT(ESP_ERR_HTTPD_RESP_SEND),                    /* 32774 0x8006 Error occured while sending response packet */
+#   endif
+#   ifdef      ESP_ERR_HTTPD_ALLOC_MEM
+    ERR_TBL_IT(ESP_ERR_HTTPD_ALLOC_MEM),                    /* 32775 0x8007 Failed to dynamically allocate memory for
+                                                                            resource */
+#   endif
+#   ifdef      ESP_ERR_HTTPD_TASK
+    ERR_TBL_IT(ESP_ERR_HTTPD_TASK),                         /* 32776 0x8008 Failed to launch server task/thread */
 #   endif
     // components/spi_flash/include/esp_spi_flash.h
 #   ifdef      ESP_ERR_FLASH_BASE

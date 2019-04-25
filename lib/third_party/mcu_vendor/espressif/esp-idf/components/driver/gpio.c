@@ -423,16 +423,19 @@ esp_err_t gpio_isr_register(void (*fn)(void*), void * arg, int intr_alloc_flags,
     return esp_intr_alloc(ETS_GPIO_INTR_SOURCE, intr_alloc_flags, fn, arg, handle);
 }
 
-/*only level interrupt can be used for wake-up function*/
 esp_err_t gpio_wakeup_enable(gpio_num_t gpio_num, gpio_int_type_t intr_type)
 {
     GPIO_CHECK(GPIO_IS_VALID_GPIO(gpio_num), "GPIO number error", ESP_ERR_INVALID_ARG);
     esp_err_t ret = ESP_OK;
     if (( intr_type == GPIO_INTR_LOW_LEVEL ) || ( intr_type == GPIO_INTR_HIGH_LEVEL )) {
-        GPIO.pin[gpio_num].int_type = intr_type;
-        GPIO.pin[gpio_num].wakeup_enable = 0x1;
+        if (RTC_GPIO_IS_VALID_GPIO(gpio_num)) {
+            ret = rtc_gpio_wakeup_enable(gpio_num, intr_type);
+        } else {
+            GPIO.pin[gpio_num].int_type = intr_type;
+            GPIO.pin[gpio_num].wakeup_enable = 0x1;
+        }
     } else {
-        ESP_LOGE(GPIO_TAG, "GPIO wakeup only support Level mode,but edge mode set. gpio_num:%u", gpio_num);
+        ESP_LOGE(GPIO_TAG, "GPIO wakeup only supports level mode, but edge mode set. gpio_num:%u", gpio_num);
         ret = ESP_ERR_INVALID_ARG;
     }
     return ret;
@@ -534,6 +537,20 @@ esp_err_t gpio_hold_dis(gpio_num_t gpio_num)
         r = ESP_ERR_NOT_SUPPORTED;
     }
     return r == ESP_OK ? ESP_OK : ESP_ERR_NOT_SUPPORTED;
+}
+
+void gpio_deep_sleep_hold_en(void)
+{
+    portENTER_CRITICAL(&gpio_spinlock);
+    SET_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_AUTOHOLD_EN_M);
+    portEXIT_CRITICAL(&gpio_spinlock);
+}
+
+void gpio_deep_sleep_hold_dis(void)
+{
+    portENTER_CRITICAL(&gpio_spinlock);
+    CLEAR_PERI_REG_MASK(RTC_CNTL_DIG_ISO_REG, RTC_CNTL_DG_PAD_AUTOHOLD_EN_M);
+    portEXIT_CRITICAL(&gpio_spinlock);
 }
 
 void gpio_iomux_in(uint32_t gpio, uint32_t signal_idx)
