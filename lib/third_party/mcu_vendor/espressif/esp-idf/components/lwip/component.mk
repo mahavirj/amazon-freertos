@@ -1,6 +1,7 @@
 #
 # Component Makefile
 #
+ifdef CONFIG_TCPIP_LWIP
 COMPONENT_SUBMODULES += lwip
 
 COMPONENT_ADD_INCLUDEDIRS := \
@@ -33,4 +34,11 @@ CFLAGS += -Wno-address  # lots of LWIP source files evaluate macros that check a
 ifeq ($(GCC_NOT_5_2_0), 1)
 lwip/src/netif/ppp/ppp.o: CFLAGS += -Wno-uninitialized
 lwip/src/netif/ppp/pppos.o: CFLAGS += -Wno-implicit-fallthrough
+endif
+
+else
+
+COMPONENT_ADD_INCLUDEDIRS :=
+COMPONENT_SRCDIRS :=
+
 endif
