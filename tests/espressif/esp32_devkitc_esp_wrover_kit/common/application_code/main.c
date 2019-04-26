@@ -37,14 +37,17 @@
 #include "aws_clientcredential.h"
 #include "aws_dev_mode_key_provisioning.h"
 #include "nvs_flash.h"
+#if CONFIG_TCPIP_FREERTOS_STACK
 #include "FreeRTOS_IP.h"
 #include "FreeRTOS_Sockets.h"
+#endif
 #include "aws_test_utils.h"
-
 
 #include "esp_system.h"
 #include "esp_wifi.h"
 #include "esp_interface.h"
+
+#include "tcpip_adapter.h"
 
 /* Logging Task Defines. */
 #define mainLOGGING_MESSAGE_QUEUE_LENGTH    ( 32 )
@@ -142,12 +145,16 @@ int app_main( void )
     xLoggingTaskInitialize( mainLOGGING_TASK_STACK_SIZE,
                             tskIDLE_PRIORITY + 5,
                             mainLOGGING_MESSAGE_QUEUE_LENGTH );
-
+#if CONFIG_TCPIP_LWIP
+    tcpip_adapter_init();
+#endif
+#if CONFIG_TCPIP_FREERTOS_STACK
     FreeRTOS_IPInit( ucIPAddress,
             ucNetMask,
             ucGatewayAddress,
             ucDNSServerAddress,
             ucMACAddress );
+#endif
 
     if( SYSTEM_Init() == pdPASS )
     {
@@ -383,6 +390,7 @@ void vApplicationStackOverflowHook( TaskHandle_t xTask,
     }
 }
 /*-----------------------------------------------------------*/
+#if CONFIG_TCPIP_FREERTOS_STACK
 void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
 {
     uint32_t ulIPAddress, ulNetMask, ulGatewayAddress, ulDNSServerAddress;
@@ -405,3 +413,4 @@ void vApplicationIPNetworkEventHook( eIPCallbackEvent_t eNetworkEvent )
         esp_event_send(&evt);
     }
 }
+#endif

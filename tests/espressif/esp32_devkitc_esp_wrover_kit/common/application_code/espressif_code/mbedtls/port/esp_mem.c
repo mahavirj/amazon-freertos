@@ -12,11 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "stdint.h"
-#include "string.h"
+#include <esp_attr.h>
+#include <esp_heap_caps.h>
+#include <sdkconfig.h>
 
-void esp_eth_get_mac(uint8_t mac[6])
+#ifndef CONFIG_MBEDTLS_CUSTOM_MEM_ALLOC
+
+IRAM_ATTR void *esp_mbedtls_mem_calloc(size_t n, size_t size)
 {
-    uint8_t lmac[6] = {0};
-    memcpy(mac, lmac, 6);
+#ifdef CONFIG_MBEDTLS_INTERNAL_MEM_ALLOC
+    return heap_caps_calloc(n, size, MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT);
+#elif CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC
+    return heap_caps_calloc(n, size, MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT);
+#else
+    return calloc(n, size);
+#endif
 }
+
+IRAM_ATTR void esp_mbedtls_mem_free(void *ptr)
+{
+    return heap_caps_free(ptr);
+}
+
+#endif /* !CONFIG_MBEDTLS_CUSTOM_MEM_ALLOC */
