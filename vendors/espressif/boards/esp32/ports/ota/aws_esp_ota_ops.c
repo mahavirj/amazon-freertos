@@ -191,7 +191,7 @@ esp_err_t aws_esp_ota_end(esp_ota_handle_t handle)
       .size = it->part->size,
     };
 
-    if (esp_image_load(ESP_IMAGE_VERIFY, &part_pos, &data) != ESP_OK) {
+    if (esp_image_verify(ESP_IMAGE_VERIFY, &part_pos, &data) != ESP_OK) {
         ret = ESP_ERR_OTA_VALIDATE_FAILED;
         goto cleanup;
     }
@@ -248,7 +248,7 @@ static esp_err_t esp_rewrite_ota_data(esp_partition_subtype_t subtype)
     uint16_t ota_app_count = 0;
     uint32_t i = 0;
     uint32_t seq;
-    static spi_flash_mmap_memory_t ota_data_map;
+    spi_flash_mmap_handle_t ota_data_map;
     const void *result = NULL;
 
     find_partition = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_OTA, NULL);
@@ -329,7 +329,7 @@ esp_err_t aws_esp_ota_set_boot_partition(const esp_partition_t *partition)
         .offset = partition->address,
         .size = partition->size,
     };
-    if (esp_image_load(ESP_IMAGE_VERIFY, &part_pos, &data) != ESP_OK) {
+    if (esp_image_verify(ESP_IMAGE_VERIFY, &part_pos, &data) != ESP_OK) {
         return ESP_ERR_OTA_VALIDATE_FAILED;
     }
 

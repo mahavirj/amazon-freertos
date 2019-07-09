@@ -36,8 +36,8 @@
 #include "iot_secure_sockets.h"
 
 
-#include "sockets.h"
-#include "netdb.h"
+#include "lwip/sockets.h"
+#include "lwip/netdb.h"
 
 #include "iot_wifi.h"
 
@@ -48,6 +48,7 @@
 #include "task.h"
 
 #include <stdbool.h>
+#include <string.h>
 
 #undef _SECURE_SOCKETS_WRAPPER_NOT_REDEFINE
 
@@ -243,7 +244,7 @@ static void prvRxSelectSet( ss_ctx_t * ctx, const void * pvOptionValue )
 
     xReturned = xTaskCreate( vTaskRxSelect,   /* pvTaskCode */
                                "rxs",         /* pcName */
-                               512,           /* usStackDepth */
+                               2048,           /* usStackDepth */
                                ctx,           /* pvParameters */
                                1,             /* uxPriority */
                                &xHandle );    /* pxCreatedTask */

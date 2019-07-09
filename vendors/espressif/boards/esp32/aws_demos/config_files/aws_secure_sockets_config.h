@@ -1,5 +1,5 @@
 /*
- * Amazon FreeRTOS V1.4.7
+ * Amazon FreeRTOS V1.4.8
  * Copyright (C) 2018 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -22,6 +22,7 @@
  * http://aws.amazon.com/freertos
  * http://www.FreeRTOS.org
  */
+
 
 /**
  * @file aws_secure_sockets_config.h
@@ -49,8 +50,8 @@
 #define socketsconfigDEFAULT_RECV_TIMEOUT    ( 10000 )
 
 /**
- * @brief Enable metrics of secure socket.
+ * @brief Default max socket number support
  */
-#define AWS_IOT_SECURE_SOCKETS_METRICS_ENABLED    ( 1 )
+#define socketsconfigDEFAULT_MAX_NUM_SECURE_SOCKETS     6
 
 #endif /* _AWS_SECURE_SOCKETS_CONFIG_H_ */
