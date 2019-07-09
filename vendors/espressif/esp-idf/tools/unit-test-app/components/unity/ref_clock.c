@@ -119,6 +119,8 @@ void ref_clock_init()
     PCNT.ctrl.val |= BIT(REF_CLOCK_PCNT_UNIT * 2);
     PCNT.ctrl.val &= ~BIT(REF_CLOCK_PCNT_UNIT * 2);
 
+    ets_delay_us(10000);
+
     // Enable interrupt
     s_milliseconds = 0;
     ESP_ERROR_CHECK(esp_intr_alloc(ETS_PCNT_INTR_SOURCE, ESP_INTR_FLAG_IRAM, pcnt_isr, NULL, &s_intr_handle));
@@ -128,10 +130,10 @@ void ref_clock_init()
 
 static void IRAM_ATTR pcnt_isr(void* arg)
 {
-    portENTER_CRITICAL_ISR(&s_lock);
+    portENTER_CRITICAL(&s_lock);
     PCNT.int_clr.val = BIT(REF_CLOCK_PCNT_UNIT);
     s_milliseconds += REF_CLOCK_PRESCALER_MS;
-    portEXIT_CRITICAL_ISR(&s_lock);
+    portEXIT_CRITICAL(&s_lock);
 }
 
 void ref_clock_deinit()

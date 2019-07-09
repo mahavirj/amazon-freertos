@@ -111,7 +111,11 @@ esp_err_t IRAM_ATTR esp_pm_lock_acquire(esp_pm_lock_handle_t handle)
         return ESP_ERR_INVALID_ARG;
     }
 
-    portENTER_CRITICAL_SAFE(&handle->spinlock);
+    if (xPortInIsrContext()) {
+        portENTER_CRITICAL_ISR(&handle->spinlock);
+    } else {
+        portENTER_CRITICAL(&handle->spinlock);
+    }
     if (handle->count++ == 0) {
         pm_time_t now = 0;
 #ifdef WITH_PROFILING
@@ -123,7 +127,11 @@ esp_err_t IRAM_ATTR esp_pm_lock_acquire(esp_pm_lock_handle_t handle)
         handle->times_taken++;
 #endif
     }
-    portEXIT_CRITICAL_SAFE(&handle->spinlock);
+    if (xPortInIsrContext()) {
+        portEXIT_CRITICAL_ISR(&handle->spinlock);
+    } else {
+        portEXIT_CRITICAL(&handle->spinlock);
+    }
     return ESP_OK;
 }
 
@@ -137,7 +145,11 @@ esp_err_t IRAM_ATTR esp_pm_lock_release(esp_pm_lock_handle_t handle)
         return ESP_ERR_INVALID_ARG;
     }
     esp_err_t ret = ESP_OK;
-    portENTER_CRITICAL_SAFE(&handle->spinlock);
+    if (xPortInIsrContext()) {
+        portENTER_CRITICAL_ISR(&handle->spinlock);
+    } else {
+        portENTER_CRITICAL(&handle->spinlock);
+    }
     if (handle->count == 0) {
         ret = ESP_ERR_INVALID_STATE;
         goto out;
@@ -151,7 +163,11 @@ esp_err_t IRAM_ATTR esp_pm_lock_release(esp_pm_lock_handle_t handle)
         esp_pm_impl_switch_mode(handle->mode, MODE_UNLOCK, now);
     }
 out:
-    portEXIT_CRITICAL_SAFE(&handle->spinlock);
+    if (xPortInIsrContext()) {
+        portEXIT_CRITICAL_ISR(&handle->spinlock);
+    } else {
+        portEXIT_CRITICAL(&handle->spinlock);
+    }
     return ret;
 }
 

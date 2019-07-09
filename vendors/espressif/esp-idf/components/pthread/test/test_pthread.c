@@ -22,7 +22,7 @@ TEST_CASE("pthread create join", "[pthread]")
     volatile int num = 7;
     volatile bool attr_init = false;
     void *thread_rval = NULL;
-    pthread_t new_thread = NULL;
+    pthread_t new_thread = (pthread_t)NULL;
     pthread_attr_t attr;
 
     if (TEST_PROTECT()) {
@@ -161,6 +161,11 @@ TEST_CASE("pthread mutex lock unlock", "[pthread]")
 {
     int res = 0;
 
+    /* Present behavior of mutex initializer is unlike what is
+     * defined in Posix standard, ie. calling pthread_mutex_lock
+     * on such a mutex would internally cause dynamic allocation.
+     * Therefore pthread_mutex_destroy needs to be called in
+     * order to avoid memory leak. */
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
     res = pthread_mutex_lock(&mutex);
@@ -168,6 +173,11 @@ TEST_CASE("pthread mutex lock unlock", "[pthread]")
 
     res = pthread_mutex_unlock(&mutex);
     TEST_ASSERT_EQUAL_INT(0, res);
+
+    /* This deviates from the Posix standard static mutex behavior.
+     * This needs to be removed in the future when standard mutex
+     * initializer is supported */
+    pthread_mutex_destroy(&mutex);
 
     test_mutex_lock_unlock(PTHREAD_MUTEX_ERRORCHECK);
     test_mutex_lock_unlock(PTHREAD_MUTEX_RECURSIVE);

@@ -1,16 +1,19 @@
 include(ExternalProject)
 
 macro(kconfig_set_variables)
-    set_default(IDF_SDKCONFIG_DEFAULTS "")
-
-    set_default(CONFIG_DIR ${IDF_BUILD_ARTIFACTS_DIR}/config)
-    set_default(SDKCONFIG ${IDF_PROJECT_PATH}/sdkconfig)
+    set(CONFIG_DIR ${CMAKE_BINARY_DIR}/config)
+    set_default(SDKCONFIG ${PROJECT_PATH}/sdkconfig)
     set(SDKCONFIG_HEADER ${CONFIG_DIR}/sdkconfig.h)
     set(SDKCONFIG_CMAKE ${CONFIG_DIR}/sdkconfig.cmake)
     set(SDKCONFIG_JSON ${CONFIG_DIR}/sdkconfig.json)
     set(KCONFIG_JSON_MENUS ${CONFIG_DIR}/kconfig_menus.json)
 
     set(ROOT_KCONFIG ${IDF_PATH}/Kconfig)
+
+    set_default(SDKCONFIG_DEFAULTS "${SDKCONFIG}.defaults")
+
+    # ensure all source files can include sdkconfig.h
+    include_directories("${CONFIG_DIR}")
 endmacro()
 
 if(CMAKE_HOST_WIN32)
@@ -48,7 +51,7 @@ endif()
 if(NOT MCONF)
     # Use the existing Makefile to build mconf (out of tree) when needed
     #
-    set(MCONF ${CMAKE_CURRENT_BINARY_DIR}/kconfig_bin/mconf-idf)
+    set(MCONF kconfig_bin/mconf-idf)
 
     externalproject_add(mconf-idf
         SOURCE_DIR ${IDF_PATH}/tools/kconfig
@@ -92,12 +95,8 @@ function(kconfig_process_config)
         endif()
     endforeach()
 
-    if(IDF_SDKCONFIG_DEFAULTS)
-        set(defaults_arg --defaults "${IDF_SDKCONFIG_DEFAULTS}")
-    endif()
-
-    if(EXISTS "${SDKCONFIG_DEFAULTS}.${IDF_TARGET}")
-        list(APPEND defaults_arg --defaults "${SDKCONFIG_DEFAULTS}.${IDF_TARGET}")
+    if(EXISTS ${SDKCONFIG_DEFAULTS})
+        set(defaults_arg --defaults "${SDKCONFIG_DEFAULTS}")
     endif()
 
     # Set these in the parent scope, so that they can be written to project_description.json
@@ -110,7 +109,6 @@ function(kconfig_process_config)
         --kconfig ${ROOT_KCONFIG}
         --config ${SDKCONFIG}
         ${defaults_arg}
-        --create-config-if-missing
         --env "COMPONENT_KCONFIGS=${kconfigs}"
         --env "COMPONENT_KCONFIGS_PROJBUILD=${kconfigs_projbuild}"
         --env "IDF_CMAKE=y")
@@ -119,13 +117,12 @@ function(kconfig_process_config)
     add_custom_target(menuconfig
         ${menuconfig_depends}
         # create any missing config file, with defaults if necessary
-        COMMAND ${confgen_basecommand} --env "IDF_TARGET=${IDF_TARGET}" --output config ${SDKCONFIG}
+        COMMAND ${confgen_basecommand} --output config ${SDKCONFIG}
         COMMAND ${CMAKE_COMMAND} -E env
         "COMPONENT_KCONFIGS=${kconfigs}"
         "COMPONENT_KCONFIGS_PROJBUILD=${kconfigs_projbuild}"
         "IDF_CMAKE=y"
         "KCONFIG_CONFIG=${SDKCONFIG}"
-        "IDF_TARGET=${IDF_TARGET}"
         ${MCONF} ${ROOT_KCONFIG}
         VERBATIM
         USES_TERMINAL)
@@ -135,7 +132,8 @@ function(kconfig_process_config)
         COMMAND ${CMAKE_COMMAND} -E env
         "COMPONENT_KCONFIGS=${kconfigs}"
         "COMPONENT_KCONFIGS_PROJBUILD=${kconfigs_projbuild}"
-        ${IDF_PATH}/tools/kconfig_new/confserver.py --kconfig ${IDF_PATH}/Kconfig --config ${SDKCONFIG}
+        ${PYTHON} ${IDF_PATH}/tools/kconfig_new/confserver.py
+        --kconfig ${IDF_PATH}/Kconfig --config ${SDKCONFIG}
         VERBATIM
         USES_TERMINAL)
 
@@ -143,12 +141,24 @@ function(kconfig_process_config)
     # makes sdkconfig.h and skdconfig.cmake
     #
     # This happens during the cmake run not during the build
-    execute_process(COMMAND ${confgen_basecommand}
-        --output header ${SDKCONFIG_HEADER}
-        --output cmake ${SDKCONFIG_CMAKE}
-        --output json ${SDKCONFIG_JSON}
-        --output json_menus ${KCONFIG_JSON_MENUS}
-        RESULT_VARIABLE config_result)
+    if(NOT BOOTLOADER_BUILD)
+        execute_process(
+            COMMAND ${confgen_basecommand}
+            --output header ${SDKCONFIG_HEADER}
+            --output cmake ${SDKCONFIG_CMAKE}
+            --output json ${SDKCONFIG_JSON}
+            --output json_menus ${KCONFIG_JSON_MENUS}
+            --output config ${SDKCONFIG} # only generate config at the top-level project
+            RESULT_VARIABLE config_result)
+    else()
+        execute_process(
+            COMMAND ${confgen_basecommand}
+            --output header ${SDKCONFIG_HEADER}
+            --output cmake ${SDKCONFIG_CMAKE}
+            --output json ${SDKCONFIG_JSON}
+            --output json_menus ${KCONFIG_JSON_MENUS}
+            RESULT_VARIABLE config_result)
+    endif()
     if(config_result)
         message(FATAL_ERROR "Failed to run confgen.py (${confgen_basecommand}). Error ${config_result}")
     endif()

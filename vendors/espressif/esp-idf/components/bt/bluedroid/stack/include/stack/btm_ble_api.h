@@ -867,6 +867,7 @@ tBTM_BLE_SCAN_SETUP_CBACK bta_ble_scan_setup_cb;
 typedef void (tBTM_START_ADV_CMPL_CBACK) (UINT8 status);
 typedef void (tBTM_START_STOP_ADV_CMPL_CBACK) (UINT8 status);
 
+typedef void (tBTM_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_CMPL_CBACK) (tBTM_STATUS status, uint8_t subcode, uint32_t length, uint8_t *device_info);
 
 
 /*****************************************************************************
@@ -996,6 +997,8 @@ tBTM_STATUS BTM_BleWriteAdvDataRaw(UINT8 *p_raw_adv, UINT32 raw_adv_len);
 
 
 tBTM_STATUS BTM_BleSetRandAddress(BD_ADDR rand_addr);
+
+void BTM_BleClearRandAddress(void);
 
 
 /*******************************************************************************
@@ -1240,7 +1243,7 @@ tBTM_STATUS BTM_BleObserve(BOOLEAN start, UINT32 duration,
 *******************************************************************************/
 //extern
 tBTM_STATUS BTM_BleScan(BOOLEAN start, UINT32 duration,
-                           tBTM_INQ_RESULTS_CB *p_results_cb, tBTM_CMPL_CB *p_cmpl_cb);
+                           tBTM_INQ_RESULTS_CB *p_results_cb, tBTM_CMPL_CB *p_cmpl_cb, tBTM_INQ_DIS_CB *p_discard_cb);
 
 
 /*******************************************************************************
@@ -2051,6 +2054,22 @@ tBTM_STATUS BTM_BleGetEnergyInfo(tBTM_BLE_ENERGY_INFO_CBACK *p_ener_cback);
 //extern
 tBTM_STATUS BTM_SetBleDataLength(BD_ADDR bd_addr, UINT16 tx_pdu_length);
 
+/*******************************************************************************
+**
+** Function         BTM_UpdateBleDuplicateExceptionalList
+**
+** Description      This function is called to update duplicate scan exceptional list.
+**
+** Parameters:      subcode: add, remove or clean duplicate scan exceptional list.
+**                  type: device info type
+**                  device_info: device information
+**                  update_exceptional_list_cmp_cb: complete callback
+**
+** Returns          status
+**
+*******************************************************************************/
+
+tBTM_STATUS BTM_UpdateBleDuplicateExceptionalList(uint8_t subcode, uint32_t type, BD_ADDR device_info, tBTM_UPDATE_DUPLICATE_EXCEPTIONAL_LIST_CMPL_CBACK update_exceptional_list_cmp_cb);
 /*
 #ifdef __cplusplus
 }

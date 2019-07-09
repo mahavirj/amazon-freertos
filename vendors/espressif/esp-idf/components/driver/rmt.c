@@ -306,6 +306,14 @@ esp_err_t rmt_set_idle_level(rmt_channel_t channel, bool idle_out_en, rmt_idle_l
     return ESP_OK;
 }
 
+esp_err_t rmt_get_idle_level(rmt_channel_t channel, bool* idle_out_en, rmt_idle_level_t* level)
+{
+    RMT_CHECK(channel < RMT_CHANNEL_MAX, RMT_CHANNEL_ERROR_STR, ESP_ERR_INVALID_ARG);
+    *idle_out_en = (bool) (RMT.conf_ch[channel].conf1.idle_out_en);
+    *level = (rmt_idle_level_t) (RMT.conf_ch[channel].conf1.idle_out_lv);
+    return ESP_OK;
+}
+
 esp_err_t rmt_get_status(rmt_channel_t channel, uint32_t* status)
 {
     RMT_CHECK(channel < RMT_CHANNEL_MAX, RMT_CHANNEL_ERROR_STR, ESP_ERR_INVALID_ARG);
@@ -492,9 +500,9 @@ esp_err_t rmt_config(const rmt_config_t* rmt_param)
 
 static void IRAM_ATTR rmt_fill_memory(rmt_channel_t channel, const rmt_item32_t* item, uint16_t item_num, uint16_t mem_offset)
 {
-    portENTER_CRITICAL_SAFE(&rmt_spinlock);
+    portENTER_CRITICAL(&rmt_spinlock);
     RMT.apb_conf.fifo_mask = RMT_DATA_MODE_MEM;
-    portEXIT_CRITICAL_SAFE(&rmt_spinlock);
+    portEXIT_CRITICAL(&rmt_spinlock);
     int i;
     for(i = 0; i < item_num; i++) {
         RMTMEM.chan[channel].data32[i + mem_offset].val = item[i].val;
@@ -837,7 +845,9 @@ esp_err_t rmt_wait_tx_done(rmt_channel_t channel, TickType_t wait_time)
         return ESP_OK;
     }
     else {
-        ESP_LOGE(RMT_TAG, "Timeout on wait_tx_done");
+        if (wait_time != 0) {  // Don't emit error message if just polling.
+            ESP_LOGE(RMT_TAG, "Timeout on wait_tx_done");
+        }
         return ESP_ERR_TIMEOUT;
     }
 }

@@ -133,6 +133,10 @@ static void pthread_delete(esp_pthread_t *pthread)
 /* Call this function to configure pthread stacks in Pthreads */
 esp_err_t esp_pthread_set_cfg(const esp_pthread_cfg_t *cfg)
 {
+    if (cfg->stack_size < PTHREAD_STACK_MIN) {
+        return ESP_ERR_INVALID_ARG;
+    }
+
     /* If a value is already set, update that value */
     esp_pthread_cfg_t *p = pthread_getspecific(s_pthread_cfg_key);
     if (!p) {
@@ -592,7 +596,7 @@ int IRAM_ATTR pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct times
     struct timespec currtime;
     clock_gettime(CLOCK_REALTIME, &currtime);
     TickType_t tmo = ((timeout->tv_sec - currtime.tv_sec)*1000 +
-                     (timeout->tv_nsec - currtime.tv_nsec)*1e-6)/portTICK_PERIOD_MS;
+                     (timeout->tv_nsec - currtime.tv_nsec)/1000000)/portTICK_PERIOD_MS;
 
     res = pthread_mutex_lock_internal((esp_pthread_mutex_t *)*mutex, tmo);
     if (res == EBUSY) {

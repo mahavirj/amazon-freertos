@@ -29,7 +29,6 @@
 #include "freertos/semphr.h"
 #include "freertos/xtensa_api.h"
 #include "freertos/task.h"
-#include "freertos/ringbuf.h"
 #include "soc/soc.h"
 #include "soc/soc_memory_layout.h"
 #include "soc/dport_reg.h"
@@ -46,6 +45,18 @@ static const char *SPI_TAG = "spi_slave";
     }
 
 #define VALID_HOST(x) (x>SPI_HOST && x<=VSPI_HOST)
+
+#ifdef CONFIG_SPI_SLAVE_ISR_IN_IRAM
+#define SPI_SLAVE_ISR_ATTR IRAM_ATTR
+#else
+#define SPI_SLAVE_ISR_ATTR
+#endif
+
+#ifdef CONFIG_SPI_SLAVE_IN_IRAM
+#define SPI_SLAVE_ATTR IRAM_ATTR
+#else
+#define SPI_SLAVE_ATTR
+#endif
 
 typedef struct {
     int id;
@@ -99,6 +110,9 @@ esp_err_t spi_slave_initialize(spi_host_device_t host, const spi_bus_config_t *b
     SPI_CHECK(VALID_HOST(host), "invalid host", ESP_ERR_INVALID_ARG);
     SPI_CHECK( dma_chan >= 0 && dma_chan <= 2, "invalid dma channel", ESP_ERR_INVALID_ARG );
     SPI_CHECK((bus_config->intr_flags & (ESP_INTR_FLAG_HIGH|ESP_INTR_FLAG_EDGE|ESP_INTR_FLAG_INTRDISABLED))==0, "intr flag not allowed", ESP_ERR_INVALID_ARG);
+#ifndef CONFIG_SPI_SLAVE_ISR_IN_IRAM
+    SPI_CHECK((bus_config->intr_flags & ESP_INTR_FLAG_IRAM)==0, "ESP_INTR_FLAG_IRAM should be disabled when CONFIG_SPI_SLAVE_ISR_IN_IRAM is not set.", ESP_ERR_INVALID_ARG);
+#endif
 
     spi_chan_claimed=spicommon_periph_claim(host);
     SPI_CHECK(spi_chan_claimed, "host already in use", ESP_ERR_INVALID_STATE);
@@ -277,7 +291,7 @@ esp_err_t spi_slave_free(spi_host_device_t host)
 }
 
 
-esp_err_t spi_slave_queue_trans(spi_host_device_t host, const spi_slave_transaction_t *trans_desc, TickType_t ticks_to_wait)
+esp_err_t SPI_SLAVE_ATTR spi_slave_queue_trans(spi_host_device_t host, const spi_slave_transaction_t *trans_desc, TickType_t ticks_to_wait)
 {
     BaseType_t r;
     SPI_CHECK(VALID_HOST(host), "invalid host", ESP_ERR_INVALID_ARG);
@@ -295,7 +309,7 @@ esp_err_t spi_slave_queue_trans(spi_host_device_t host, const spi_slave_transact
 }
 
 
-esp_err_t spi_slave_get_trans_result(spi_host_device_t host, spi_slave_transaction_t **trans_desc, TickType_t ticks_to_wait)
+esp_err_t SPI_SLAVE_ATTR spi_slave_get_trans_result(spi_host_device_t host, spi_slave_transaction_t **trans_desc, TickType_t ticks_to_wait)
 {
     BaseType_t r;
     SPI_CHECK(VALID_HOST(host), "invalid host", ESP_ERR_INVALID_ARG);
@@ -306,7 +320,7 @@ esp_err_t spi_slave_get_trans_result(spi_host_device_t host, spi_slave_transacti
 }
 
 
-esp_err_t spi_slave_transmit(spi_host_device_t host, spi_slave_transaction_t *trans_desc, TickType_t ticks_to_wait)
+esp_err_t SPI_SLAVE_ATTR spi_slave_transmit(spi_host_device_t host, spi_slave_transaction_t *trans_desc, TickType_t ticks_to_wait)
 {
     esp_err_t ret;
     spi_slave_transaction_t *ret_trans;
@@ -343,7 +357,7 @@ static void dumpll(lldesc_t *ll)
 }
 #endif
 
-static void IRAM_ATTR spi_slave_restart_after_dmareset(void *arg)
+static void SPI_SLAVE_ISR_ATTR spi_slave_restart_after_dmareset(void *arg)
 {
     spi_slave_t *host = (spi_slave_t *)arg;
     esp_intr_enable(host->intr);
@@ -352,7 +366,7 @@ static void IRAM_ATTR spi_slave_restart_after_dmareset(void *arg)
 //This is run in interrupt context and apart from initialization and destruction, this is the only code
 //touching the host (=spihost[x]) variable. The rest of the data arrives in queues. That is why there are
 //no muxes in this code.
-static void IRAM_ATTR spi_intr(void *arg)
+static void SPI_SLAVE_ISR_ATTR spi_intr(void *arg)
 {
     BaseType_t r;
     BaseType_t do_yield = pdFALSE;
@@ -415,12 +429,14 @@ static void IRAM_ATTR spi_intr(void *arg)
         }
     }
 
+    //Disable interrupt before checking to avoid concurrency issue.
+    esp_intr_disable(host->intr);
     //Grab next transaction
     r = xQueueReceiveFromISR(host->trans_queue, &trans, &do_yield);
-    if (!r) {
-        //No packet waiting. Disable interrupt.
-        esp_intr_disable(host->intr);
-    } else {
+    if (r) {
+        //enable the interrupt again if there is packet to send
+        esp_intr_enable(host->intr);
+
         //We have a transaction. Send it.
         host->hw->slave.trans_done = 0; //clear int bit
         host->cur_trans = trans;

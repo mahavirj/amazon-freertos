@@ -39,6 +39,7 @@
 #include "soc/timer_group_reg.h"
 #include "soc/gpio_reg.h"
 #include "soc/gpio_sig_map.h"
+#include "soc/rtc_wdt.h"
 
 #include "sdkconfig.h"
 #include "esp_image_format.h"
@@ -49,6 +50,8 @@
 #include "bootloader_random.h"
 #include "bootloader_config.h"
 #include "bootloader_common.h"
+#include "bootloader_utility.h"
+#include "bootloader_sha.h"
 
 static const char* TAG = "boot";
 
@@ -291,7 +294,7 @@ static bool try_load_partition(const esp_partition_pos_t *partition, esp_image_m
         return false;
     }
 #ifdef BOOTLOADER_BUILD
-    if (esp_image_load(ESP_IMAGE_LOAD, partition, data) == ESP_OK) {
+    if (bootloader_load_image(partition, data) == ESP_OK) {
         ESP_LOGI(TAG, "Loaded app from partition at offset 0x%x",
                  partition->offset);
         return true;
@@ -314,7 +317,7 @@ void bootloader_utility_load_boot_image(bootloader_state_t *bs, int start_index)
             load_image(bs, &image_data);
         } else {
             ESP_LOGE(TAG, "No bootable test partition in the partition table");
-            return;
+            bootloader_reset();
         }
     }
 
@@ -351,36 +354,21 @@ void bootloader_utility_load_boot_image(bootloader_state_t *bs, int start_index)
 
     ESP_LOGE(TAG, "No bootable app partitions in the partition table");
     bzero(&image_data, sizeof(esp_image_metadata_t));
+    bootloader_reset();
 }
 
-#ifdef CONFIG_BOOTLOADER_WDT_ENABLE
-static rtc_slow_freq_t bootloader_rtc_clk_slow_freq_get()
-{
-	return REG_GET_FIELD(RTC_CNTL_CLK_CONF_REG, RTC_CNTL_ANA_CLK_RTC_SEL);
-}
-
-static uint32_t bootloader_rtc_clk_slow_freq_get_hz()
-{
-	switch (bootloader_rtc_clk_slow_freq_get()) {
-		case RTC_SLOW_FREQ_RTC: return 150000;
-		case RTC_SLOW_FREQ_32K_XTAL: return 32768;
-		case RTC_SLOW_FREQ_8MD256: return (8500000 / 256);
-	}
-	return 0;
-}
-
+#ifdef CONFIG_BOOTLOADER_WDT_ENABLE_OTA
 static void enable_rtc_wdt(uint32_t time_ms)
 {
-    uint32_t wdt_cycles = (uint32_t) ((uint64_t) bootloader_rtc_clk_slow_freq_get_hz() * time_ms / 1000);
-
-    WRITE_PERI_REG(RTC_CNTL_WDTWPROTECT_REG, RTC_CNTL_WDT_WKEY_VALUE);
-    WRITE_PERI_REG(RTC_CNTL_WDTFEED_REG, 1);
-    REG_SET_FIELD(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_SYS_RESET_LENGTH, 7);
-    REG_SET_FIELD(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_CPU_RESET_LENGTH, 7);
-    REG_SET_FIELD(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_STG0, RTC_WDT_STG_SEL_RESET_RTC);
-    WRITE_PERI_REG(RTC_CNTL_WDTCONFIG1_REG, wdt_cycles);
-    SET_PERI_REG_MASK(RTC_CNTL_WDTCONFIG0_REG, RTC_CNTL_WDT_EN | RTC_CNTL_WDT_PAUSE_IN_SLP);
-    WRITE_PERI_REG(RTC_CNTL_WDTWPROTECT_REG, 0);
+	ESP_LOGD(TAG, "Enabling RTCWDT(%d ms)", time_ms);
+	rtc_wdt_protect_off();
+	rtc_wdt_disable();
+	rtc_wdt_set_length_of_reset_signal(RTC_WDT_SYS_RESET_SIG, RTC_WDT_LENGTH_3_2us);
+	rtc_wdt_set_length_of_reset_signal(RTC_WDT_CPU_RESET_SIG, RTC_WDT_LENGTH_3_2us);
+	rtc_wdt_set_stage(RTC_WDT_STAGE0, RTC_WDT_STAGE_ACTION_RESET_RTC);
+	rtc_wdt_set_time(RTC_WDT_STAGE0, time_ms);
+	rtc_wdt_enable();
+	rtc_wdt_protect_on();
 }
 #endif
 
@@ -399,9 +387,9 @@ static void esp_ota_rollback(bootloader_state_t *bs, const esp_image_metadata_t 
         /* Check if this is first OTA boot of firmware */
         if (bootloader_common_ota_select_valid(&bs->se[active_sec]) && (bs->se[active_sec].ota_flags == ESP_OTA_IMG_NEW)) {
             ESP_LOGI(TAG, "Set fw to pending validation");
-#ifdef CONFIG_BOOTLOADER_WDT_ENABLE
+#ifdef CONFIG_BOOTLOADER_WDT_ENABLE_OTA
             /* Enable RTC WDT as this is first boot of OTA image */
-            const uint32_t time_ms = CONFIG_BOOTLOADER_WDT_TIME_MS;
+            const uint32_t time_ms = CONFIG_BOOTLOADER_WDT_TIME_MS_OTA;
             enable_rtc_wdt(time_ms);
 #endif
             bs->se[active_sec].ota_flags = ESP_OTA_IMG_PENDING_VERIFY;
@@ -549,8 +537,7 @@ static void load_image(bootloader_state_t *bs, const esp_image_metadata_t* image
            so issue a system reset to ensure flash encryption
            cache resets properly */
         ESP_LOGI(TAG, "Resetting with flash encryption enabled...");
-        REG_WRITE(RTC_CNTL_OPTIONS0_REG, RTC_CNTL_SW_SYS_RST);
-        return;
+        bootloader_reset();
     }
 #endif
 
@@ -674,4 +661,18 @@ static void set_cache_and_start_app(
     // TODO: we have used quite a bit of stack at this point.
     // use "movsp" instruction to reset stack back to where ROM stack starts.
     (*entry)();
+}
+
+
+void bootloader_reset(void)
+{
+#ifdef BOOTLOADER_BUILD
+    uart_tx_flush(0);    /* Ensure any buffered log output is displayed */
+    uart_tx_flush(1);
+    ets_delay_us(1000); /* Allow last byte to leave FIFO */
+    REG_WRITE(RTC_CNTL_OPTIONS0_REG, RTC_CNTL_SW_SYS_RST);
+    while (1) { }       /* This line will never be reached, used to keep gcc happy */
+#else
+    abort();            /* This function should really not be called from application code */
+#endif
 }

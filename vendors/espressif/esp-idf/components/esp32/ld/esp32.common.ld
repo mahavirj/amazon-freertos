@@ -11,11 +11,40 @@ SECTIONS
     . = ALIGN(4);
     *(.rtc.literal .rtc.text)
     *rtc_wake_stub*.*(.literal .text .literal.* .text.*)
+    _rtc_text_end = ABSOLUTE(.);
   } > rtc_iram_seg
+  
+  /*
+    This section is required to skip rtc.text area because rtc_iram_seg and 
+    rtc_data_seg are reflect the same address space on different buses.
+  */
+  .rtc.dummy :
+  {
+    _rtc_dummy_start = ABSOLUTE(.);
+    _rtc_fast_start = ABSOLUTE(.);
+    . = SIZEOF(.rtc.text);
+    _rtc_dummy_end = ABSOLUTE(.);
+  } > rtc_data_seg
 
-  /* RTC slow memory holds RTC wake stub
+  /* This section located in RTC FAST Memory area. 
+     It holds data marked with RTC_FAST_ATTR attribute. 
+     See the file "esp_attr.h" for more information.
+  */
+  .rtc.force_fast :
+  {
+    . = ALIGN(4);
+    _rtc_force_fast_start = ABSOLUTE(.);
+    *(.rtc.force_fast .rtc.force_fast.*)
+    . = ALIGN(4) ;
+    _rtc_force_fast_end = ABSOLUTE(.);
+  } > rtc_data_seg
+
+  /* RTC data section holds RTC wake stub
      data/rodata, including from any source file
-     named rtc_wake_stub*.c
+     named rtc_wake_stub*.c and the data marked with
+     RTC_DATA_ATTR, RTC_RODATA_ATTR attributes.
+     The memory location of the data is dependent on 
+     CONFIG_ESP32_RTCDATA_IN_FAST_MEM option.
   */
   .rtc.data :
   {
@@ -24,7 +53,7 @@ SECTIONS
     *(.rtc.rodata)
     *rtc_wake_stub*.*(.data .rodata .data.* .rodata.* .bss .bss.*)
     _rtc_data_end = ABSOLUTE(.);
-  } > rtc_slow_seg
+  } > rtc_data_location
 
   /* RTC bss, from any source file named rtc_wake_stub*.c */
   .rtc.bss (NOLOAD) :
@@ -32,13 +61,16 @@ SECTIONS
     _rtc_bss_start = ABSOLUTE(.);
     *rtc_wake_stub*.*(.bss .bss.*)
     *rtc_wake_stub*.*(COMMON)
+    *(.rtc.bss)
     _rtc_bss_end = ABSOLUTE(.);
-  } > rtc_slow_seg
+  } > rtc_data_location
 
   /* This section holds data that should not be initialized at power up 
-     and will be retained during deep sleep. The section located in 
-     RTC SLOW Memory area. User data marked with RTC_NOINIT_ATTR will be placed
-     into this section. See the file "esp_attr.h" for more information.
+     and will be retained during deep sleep.
+     User data marked with RTC_NOINIT_ATTR will be placed
+     into this section. See the file "esp_attr.h" for more information. 
+	 The memory location of the data is dependent on 
+     CONFIG_ESP32_RTCDATA_IN_FAST_MEM option.
   */
   .rtc_noinit (NOLOAD):
   {
@@ -47,11 +79,40 @@ SECTIONS
     *(.rtc_noinit .rtc_noinit.*)
     . = ALIGN(4) ;
     _rtc_noinit_end = ABSOLUTE(.);
+  } > rtc_data_location
+
+  /* This section located in RTC SLOW Memory area. 
+     It holds data marked with RTC_SLOW_ATTR attribute. 
+     See the file "esp_attr.h" for more information.
+  */
+  .rtc.force_slow :
+  {
+    . = ALIGN(4);
+    _rtc_force_slow_start = ABSOLUTE(.);
+    *(.rtc.force_slow .rtc.force_slow.*)
+    . = ALIGN(4) ;
+    _rtc_force_slow_end = ABSOLUTE(.);
   } > rtc_slow_seg
+
+  /* Get size of rtc slow data based on rtc_data_location alias */
+  _rtc_slow_length = (ORIGIN(rtc_slow_seg) == ORIGIN(rtc_data_location)) 
+                        ? (_rtc_force_slow_end - _rtc_data_start) 
+                        : (_rtc_force_slow_end - _rtc_force_slow_start);
+
+  _rtc_fast_length = (ORIGIN(rtc_slow_seg) == ORIGIN(rtc_data_location)) 
+                        ? (_rtc_force_fast_end - _rtc_fast_start) 
+                        : (_rtc_noinit_end - _rtc_fast_start);
+  
+  ASSERT((_rtc_slow_length <= LENGTH(rtc_slow_seg)),
+          "RTC_SLOW segment data does not fit.")
+          
+  ASSERT((_rtc_fast_length <= LENGTH(rtc_data_seg)),
+          "RTC_FAST segment data does not fit.")
 
   /* Send .iram0 code to iram */
   .iram0.vectors :
   {
+    _iram_start = ABSOLUTE(.);
     /* Vectors go to IRAM */
     _init_start = ABSOLUTE(.);
     /* Vectors according to builds/RF-2015.2-win32/esp108_v1_2_s5_512int_2/config.html */
@@ -85,10 +146,6 @@ SECTIONS
     *(.init.literal)
     *(.init)
     _init_end = ABSOLUTE(.);
-
-    /* This goes here, not at top of linker script, so addr2line finds it last,
-       and uses it in preference to the first symbol in IRAM */
-    _iram_start = ABSOLUTE(0);
   } > iram0_0_seg
 
   .iram0.text :
@@ -96,26 +153,41 @@ SECTIONS
     /* Code marked as runnning out of IRAM */
     _iram_text_start = ABSOLUTE(.);
     *(.iram1 .iram1.*)
+    *libesp_ringbuf.a:(.literal .text .literal.* .text.*)
     *libfreertos.a:(.literal .text .literal.* .text.*)
     *libheap.a:multi_heap.*(.literal .text .literal.* .text.*)
     *libheap.a:multi_heap_poisoning.*(.literal .text .literal.* .text.*)
     *libesp32.a:panic.*(.literal .text .literal.* .text.*)
     *libesp32.a:core_dump.*(.literal .text .literal.* .text.*)
+    INCLUDE wifi_iram.ld
     *libapp_trace.a:(.literal .text .literal.* .text.*)
     *libxtensa-debug-module.a:eri.*(.literal .text .literal.* .text.*)
     *librtc.a:(.literal .text .literal.* .text.*)
-    *libsoc.a:(.literal .text .literal.* .text.*)
+    *libsoc.a:rtc_*.*(.literal .text .literal.* .text.*)
+    *libsoc.a:cpu_util.*(.literal .text .literal.* .text.*)
     *libhal.a:(.literal .text .literal.* .text.*)
     *libgcc.a:lib2funcs.*(.literal .text .literal.* .text.*)
     *libspi_flash.a:spi_flash_rom_patch.*(.literal .text .literal.* .text.*)
     *libgcov.a:(.literal .text .literal.* .text.*)
     INCLUDE esp32.spiram.rom-functions-iram.ld
     _iram_text_end = ABSOLUTE(.);
+    _iram_end = ABSOLUTE(.);
   } > iram0_0_seg
-  
+
+  ASSERT(((_iram_text_end - ORIGIN(iram0_0_seg)) <= LENGTH(iram0_0_seg)),
+          "IRAM0 segment data does not fit.")
+
   .dram0.data :
   {
     _data_start = ABSOLUTE(.);
+    _bt_data_start = ABSOLUTE(.);
+    *libbt.a:(.data .data.*)
+    . = ALIGN (4);
+    _bt_data_end = ABSOLUTE(.);
+    _btdm_data_start = ABSOLUTE(.);
+    *libbtdm_app.a:(.data .data.*)
+    . = ALIGN (4);
+    _btdm_data_end = ABSOLUTE(.);
     *(.data)
     *(.data.*)
     *(.gnu.linkonce.d.*)
@@ -159,6 +231,15 @@ SECTIONS
   {
     . = ALIGN (8);
     _bss_start = ABSOLUTE(.);
+    *(.ext_ram.bss*)
+    _bt_bss_start = ABSOLUTE(.);
+    *libbt.a:(.bss .bss.* COMMON)
+    . = ALIGN (4);
+    _bt_bss_end = ABSOLUTE(.);
+    _btdm_bss_start = ABSOLUTE(.);
+    *libbtdm_app.a:(.bss .bss.* COMMON)
+    . = ALIGN (4);
+    _btdm_bss_end = ABSOLUTE(.);
     *(.dynsbss)
     *(.sbss)
     *(.sbss.*)
@@ -179,6 +260,9 @@ SECTIONS
     _heap_start = ABSOLUTE(.);
   } > dram0_0_seg
 
+  ASSERT(((_bss_end - ORIGIN(dram0_0_seg)) <= LENGTH(dram0_0_seg)),
+          "DRAM segment data does not fit.")
+          
   .flash.rodata :
   {
     _rodata_start = ABSOLUTE(.);
@@ -215,6 +299,11 @@ SECTIONS
     *(.xt_except_desc_end)
     *(.dynamic)
     *(.gnu.version_d)
+    /* Addresses of memory regions reserved via
+       SOC_RESERVE_MEMORY_REGION() */
+    soc_reserved_memory_region_start = ABSOLUTE(.);
+    KEEP (*(.reserved_memory_address))
+    soc_reserved_memory_region_end = ABSOLUTE(.);
     _rodata_end = ABSOLUTE(.);
     /* Literals are also RO data. */
     _lit4_start = ABSOLUTE(.);
@@ -238,6 +327,7 @@ SECTIONS
     _text_start = ABSOLUTE(.);
     *(.literal .text .literal.* .text.* .stub .gnu.warning .gnu.linkonce.literal.* .gnu.linkonce.t.*.literal .gnu.linkonce.t.*)
     *(.irom0.text) /* catch stray ICACHE_RODATA_ATTR */
+    *(.wifi0iram .wifi0iram.*) /* catch stray WIFI_IRAM_ATTR */
     *(.fini.literal)
     *(.fini)
     *(.gnu.version)
