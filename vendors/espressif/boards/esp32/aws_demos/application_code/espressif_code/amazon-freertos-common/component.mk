@@ -106,7 +106,6 @@ COMPONENT_SRCDIRS += ../.. \
         ${AMAZON_FREERTOS_ARF_PLUS_DIR}/aws/greengrass/test \
         ${AMAZON_FREERTOS_ARF_PLUS_DIR}/aws/ota/test \
         ${AMAZON_FREERTOS_ARF_PLUS_DIR}/standard/crypto/test \
-        ${AMAZON_FREERTOS_ARF_PLUS_DIR}/standard/freertos_plus_tcp/test \
         ${AMAZON_FREERTOS_ARF_PLUS_DIR}/standard/tls/test \
         ${AMAZON_FREERTOS_3RD_PARTY_DIR}/unity/src \
         ${AMAZON_FREERTOS_3RD_PARTY_DIR}/unity/extras/fixture/src \
@@ -120,7 +119,6 @@ COMPONENT_ADD_INCLUDEDIRS += $(AMAZON_FREERTOS_TESTS_DIR)/include \
         ${AMAZON_FREERTOS_SDK_DIR}/standard/ble/test \
         ${AMAZON_FREERTOS_ARF_PLUS_DIR}/aws/greengrass/test \
         ${AMAZON_FREERTOS_ARF_PLUS_DIR}/aws/ota/test \
-        ${AMAZON_FREERTOS_ARF_PLUS_DIR}/standard/freertos_plus_tcp/test \
         $(AMAZON_FREERTOS_ABSTRACTIONS_DIR)/wifi/test \
         ${AMAZON_FREERTOS_SDK_DIR}/standard/mqtt/src \
         ${AMAZON_FREERTOS_SDK_DIR}/aws/defender/src/private \
