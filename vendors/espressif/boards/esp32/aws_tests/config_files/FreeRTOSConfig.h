@@ -39,6 +39,8 @@
     #include <stdlib.h> /* for abort() */
     #include "rom/ets_sys.h"
     #include <sys/reent.h>
+    #include <soc/cpu.h>
+    #include <esp_attr.h>
 
     #if CONFIG_SYSVIEW_ENABLE
         #include "SEGGER_SYSVIEW_FreeRTOS.h"
@@ -328,6 +330,23 @@
 
     extern void esp_tasks_c_additions_init();
     #define FREERTOS_TASKS_C_ADDITIONS_INIT() esp_tasks_c_additions_init()
+
+    static inline bool IRAM_ATTR xPortCanYield(void) 
+    {
+        uint32_t ps_reg = 0;
+
+        //Get the current value of PS (processor status) register
+        RSR(PS, ps_reg);
+
+        /*  
+         * intlevel = (ps_reg & 0xf);
+         * excm  = (ps_reg >> 4) & 0x1;
+         * CINTLEVEL is max(excm * EXCMLEVEL, INTLEVEL), where EXCMLEVEL is 3.
+         * However, just return true, only intlevel is zero.
+         */
+
+        return ((ps_reg & PS_INTLEVEL_MASK) == 0); 
+    }
 
 #endif /* #ifndef __ASSEMBLER__ */
 
