@@ -181,6 +181,9 @@ ble_hs_hci_cmd_body_le_set_adv_params(const struct hci_adv_params *adv,
 #if MYNEWT_VAL(BLE_CONTROLLER)
     itvl = BLE_HCI_ADV_ITVL_MIN;
 #else
+#if MYNEWT_VAL(ESP_BLE_MESH)
+    itvl = BLE_HCI_ADV_ITVL_MIN;
+#else
     /* Make sure interval is valid for advertising type. */
     if (((adv->adv_type == BLE_HCI_ADV_TYPE_ADV_NONCONN_IND) ||
         (adv->adv_type == BLE_HCI_ADV_TYPE_ADV_SCAN_IND)) &&
@@ -189,6 +192,7 @@ ble_hs_hci_cmd_body_le_set_adv_params(const struct hci_adv_params *adv,
     } else {
         itvl = BLE_HCI_ADV_ITVL_MIN;
     }
+#endif
 #endif
 
     /* Do not check if high duty-cycle directed */
